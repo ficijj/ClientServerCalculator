@@ -80,7 +80,15 @@ void read_user_input(char message[]) {
  */
 void load_cookie() {
     // TODO
-    session_id = -1;
+    char session_id_file[10];
+    FILE *input = fopen(COOKIE_PATH, "r");
+    if(input != NULL) {
+        while(fscanf(input, "%[^\n]", session_id_file) != EOF) {
+            session_id = strtol(session_id_file, NULL, 10);
+        }
+    } else {
+        session_id = -1;
+    }
 }
 
 /**
@@ -89,6 +97,11 @@ void load_cookie() {
  */
 void save_cookie() {
     // TODO
+    FILE *output = fopen(COOKIE_PATH, "w");
+    char session_id_file[10];
+    sprintf(session_id_file, "%i", session_id);
+    fputs(session_id_file, output);
+    fclose(output);
 }
 
 /**
