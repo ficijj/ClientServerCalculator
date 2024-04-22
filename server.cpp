@@ -240,6 +240,19 @@ void get_session_file_path(int session_id, char path[]) {
  */
 void load_all_sessions() {
     // TODO
+    for(int i = 0; i < NUM_SESSIONS; i++) {
+        char path[BUFFER_LEN];
+        char content[BUFFER_LEN];
+        get_session_file_path(i, path);
+        FILE *input = fopen(path, "r");
+        if(input != NULL) {
+            printf("file found: %s\n", path);
+            while(fscanf(input, "%[^\n] ", content) != EOF) {
+                process_message(i, content);
+                // printf("session_id: %i .... data: %s \n", i, content);
+            }
+        }
+    }
 }
 
 /**
@@ -250,6 +263,23 @@ void load_all_sessions() {
  */
 void save_session(int session_id) {
     // TODO
+    char path[BUFFER_LEN];
+    char str_to_write[BUFFER_LEN];
+    for(int i = 0; i < NUM_VARIABLES; i++) {
+        if(session_list[session_id].variables[i]) {
+            printf("%.6f: %i\n", session_list[session_id].values[i], i);
+        }
+    }
+    get_session_file_path(session_id, path);
+    // printf("path: %s\n", path);
+    FILE *output = fopen(path, "w");
+    session_to_str(session_id, str_to_write);
+    // printf("write: %s\n", str_to_write);
+
+    fputs(str_to_write, output);
+
+    // printf("test...\n");
+    fclose(output);
 }
 
 /**
