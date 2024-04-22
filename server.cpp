@@ -246,8 +246,10 @@ void load_all_sessions() {
         get_session_file_path(i, path);
         FILE *input = fopen(path, "r");
         if(input != NULL) {
-            while(fscanf(input, "%[^\n]", content) != EOF) {
+            printf("file found: %s\n", path);
+            while(fscanf(input, "%[^\n] ", content) != EOF) {
                 process_message(i, content);
+                // printf("session_id: %i .... data: %s \n", i, content);
             }
         }
     }
@@ -269,9 +271,14 @@ void save_session(int session_id) {
         }
     }
     get_session_file_path(session_id, path);
+    // printf("path: %s\n", path);
     FILE *output = fopen(path, "w");
     session_to_str(session_id, str_to_write);
+    // printf("write: %s\n", str_to_write);
+
     fputs(str_to_write, output);
+
+    // printf("test...\n");
     fclose(output);
 }
 
