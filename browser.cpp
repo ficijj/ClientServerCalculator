@@ -124,8 +124,13 @@ void *server_listener(void *unused) {
     while(browser_on) {
         char message[BUFFER_LEN];
         receive_message(server_socket_fd, message);
-        puts(message);
+        if(!strcmp(message, "ERROR")) {
+            puts("Invalid input!");
+        } else {
+            puts(message);
+        }
     }
+    return NULL;
 }
 
 /**

@@ -158,20 +158,37 @@ bool process_message(int session_id, const char message[]) {
     char data[BUFFER_LEN];
     strcpy(data, message);
 
+    if(strlen(data) < 5) {
+        printf("LENGTH ERROR\n");
+        return false;
+    }
+
     // Processes the result variable.
     token = strtok(data, " ");
-    result_idx = token[0] - 'a';
+    if(isalpha(token[0])) {
+        result_idx = token[0] - 'a';
+    } else {
+        printf("RESULT VARIABLE ERROR\n");
+        return false;
+    }
 
     // Processes "=".
     token = strtok(NULL, " ");
+    if(strcmp(token, "=")) {
+        printf("EQUAL SIGN ERROR\n");
+        return false;
+    }
 
     // Processes the first variable/value.
     token = strtok(NULL, " ");
     if (is_str_numeric(token)) {
         first_value = strtod(token, NULL);
-    } else {
+    } else if(isalpha(token[0])){
         int first_idx = token[0] - 'a';
         first_value = session_list[session_id].values[first_idx];
+    } else {
+        printf("FIRST VARIABLE/VALUE ERROR\n");
+        return false;
     }
 
     // Processes the operation symbol.
@@ -185,15 +202,24 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the second variable/value.
     token = strtok(NULL, " ");
-    if (is_str_numeric(token)) {
+    if(!token) {
+        return false;
+    } else if(is_str_numeric(token)) {
         second_value = strtod(token, NULL);
-    } else {
+    } else if(isalpha(token[0])){
         int second_idx = token[0] - 'a';
         second_value = session_list[session_id].values[second_idx];
+    } else {
+        printf("SECOND VARIABLE/VALUE ERROR\n");
+        return false;
     }
 
     // No data should be left over thereafter.
     token = strtok(NULL, " ");
+    if(token) {
+        printf("LEFTOVER ERROR\n");
+        return false;
+    }
 
     session_list[session_id].variables[result_idx] = true;
 
@@ -205,6 +231,9 @@ bool process_message(int session_id, const char message[]) {
         session_list[session_id].values[result_idx] = first_value * second_value;
     } else if (symbol == '/') {
         session_list[session_id].values[result_idx] = first_value / second_value;
+    } else {
+        printf("SYMBOL ERROR\n");
+        return false;
     }
 
     return true;
@@ -368,13 +397,13 @@ void *browser_handler(void *arg) {
         bool data_valid = process_message(session_id, message);
         if (!data_valid) {
             // Send the error message to the browser.
+            broadcast(session_id, "ERROR");
             continue;
+        } else {
+            session_to_str(session_id, response);
+            broadcast(session_id, response);
+            save_session(session_id);
         }
-
-        session_to_str(session_id, response);
-        broadcast(session_id, response);
-
-        save_session(session_id);
     }
 }
 
