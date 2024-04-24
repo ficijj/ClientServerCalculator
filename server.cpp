@@ -392,7 +392,7 @@ void *browser_handler(void *arg) {
         bool data_valid = process_message(session_id, message);
         if (!data_valid) {
             // Send the error message to the browser.
-            broadcast(session_id, "ERROR");
+            send_message(browser_list[browser_id].socket_fd, "ERROR");
             continue;
         } else {
             session_to_str(session_id, response);
