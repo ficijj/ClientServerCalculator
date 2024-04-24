@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
+#include <unordered_map>
 
 #define NUM_VARIABLES 26
 #define NUM_SESSIONS 128
@@ -44,6 +45,7 @@ typedef struct session_struct {
 
 static browser_t browser_list[NUM_BROWSER];                             // Stores the information of all browsers.
 static session_t session_list[NUM_SESSIONS];                            // Stores the information of all sessions.
+std::unordered_map<int, session_t> session_map;
 static pthread_mutex_t browser_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the browser list.
 static pthread_mutex_t session_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the session list.
 
@@ -337,15 +339,23 @@ int register_browser(int browser_socket_fd) {
 
     int session_id = strtol(message, NULL, 10);
     if (session_id == -1) {
-        for (int i = 0; i < NUM_SESSIONS; ++i) {
-            if (!session_list[i].in_use) {
-                session_id = i;
-                pthread_mutex_lock(&session_list_mutex);
-                session_list[session_id].in_use = true;
-                pthread_mutex_unlock(&session_list_mutex);
-                break;
-            }
-        }
+        srand(time(NULL));
+        do {
+            session_id = rand();
+        } while(session_map.find(browser_id) != session_map.end());
+        pthread_mutex_lock(&session_list_mutex);
+        session_map[session_id].in_use = true;
+        pthread_mutex_unlock(&session_list_mutex);
+
+        // for (int i = 0; i < NUM_SESSIONS; ++i) {
+        //     if (!session_list[i].in_use) {
+        //         session_id = i;
+        //         pthread_mutex_lock(&session_list_mutex);
+        //         session_list[session_id].in_use = true;
+        //         pthread_mutex_unlock(&session_list_mutex);
+        //         break;
+        //     }
+        // }
     }
     pthread_mutex_lock(&browser_list_mutex);
     browser_list[browser_id].session_id = session_id;
