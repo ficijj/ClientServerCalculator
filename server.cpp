@@ -44,8 +44,7 @@ typedef struct session_struct {
 } session_t;
 
 static browser_t browser_list[NUM_BROWSER];                             // Stores the information of all browsers.
-static session_t session_list[NUM_SESSIONS];                            // Stores the information of all sessions.
-std::unordered_map<int, session_t> session_map;
+std::unordered_map<int, session_t> session_map;                         // Stores the information of all sessions.
 static pthread_mutex_t browser_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the browser list.
 static pthread_mutex_t session_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the session list.
 
@@ -98,7 +97,7 @@ void start_server(int port);
  */
 void session_to_str(int session_id, char result[]) {
     memset(result, 0, BUFFER_LEN);
-    session_t session = session_list[session_id];
+    session_t session = session_map[session_id];
 
     for (int i = 0; i < NUM_VARIABLES; ++i) {
         if (session.variables[i]) {
@@ -187,7 +186,7 @@ bool process_message(int session_id, const char message[]) {
         first_value = strtod(token, NULL);
     } else if(isalpha(token[0])){
         int first_idx = token[0] - 'a';
-        first_value = session_list[session_id].values[first_idx];
+        first_value = session_map[session_id].values[first_idx];
     } else {
         printf("FIRST VARIABLE/VALUE ERROR\n");
         return false;
@@ -196,8 +195,8 @@ bool process_message(int session_id, const char message[]) {
     // Processes the operation symbol.
     token = strtok(NULL, " ");
     if (token == NULL) {
-        session_list[session_id].variables[result_idx] = true;
-        session_list[session_id].values[result_idx] = first_value;
+        session_map[session_id].variables[result_idx] = true;
+        session_map[session_id].values[result_idx] = first_value;
         return true;
     }
     symbol = token[0];
@@ -210,7 +209,7 @@ bool process_message(int session_id, const char message[]) {
         second_value = strtod(token, NULL);
     } else if(isalpha(token[0])){
         int second_idx = token[0] - 'a';
-        second_value = session_list[session_id].values[second_idx];
+        second_value = session_map[session_id].values[second_idx];
     } else {
         printf("SECOND VARIABLE/VALUE ERROR\n");
         return false;
@@ -223,16 +222,16 @@ bool process_message(int session_id, const char message[]) {
         return false;
     }
 
-    session_list[session_id].variables[result_idx] = true;
+    session_map[session_id].variables[result_idx] = true;
 
     if (symbol == '+') {
-        session_list[session_id].values[result_idx] = first_value + second_value;
+        session_map[session_id].values[result_idx] = first_value + second_value;
     } else if (symbol == '-') {
-        session_list[session_id].values[result_idx] = first_value - second_value;
+        session_map[session_id].values[result_idx] = first_value - second_value;
     } else if (symbol == '*') {
-        session_list[session_id].values[result_idx] = first_value * second_value;
+        session_map[session_id].values[result_idx] = first_value * second_value;
     } else if (symbol == '/') {
-        session_list[session_id].values[result_idx] = first_value / second_value;
+        session_map[session_id].values[result_idx] = first_value / second_value;
     } else {
         printf("SYMBOL ERROR\n");
         return false;
@@ -280,7 +279,6 @@ void load_all_sessions() {
             printf("file found: %s\n", path);
             while(fscanf(input, "%[^\n] ", content) != EOF) {
                 process_message(i, content);
-                // printf("session_id: %i .... data: %s \n", i, content);
             }
         }
     }
@@ -297,19 +295,16 @@ void save_session(int session_id) {
     char path[BUFFER_LEN];
     char str_to_write[BUFFER_LEN];
     for(int i = 0; i < NUM_VARIABLES; i++) {
-        if(session_list[session_id].variables[i]) {
-            printf("%.6f: %i\n", session_list[session_id].values[i], i);
+        if(session_map[session_id].variables[i]) {
+            printf("%.6f: %i\n", session_map[session_id].values[i], i);
         }
     }
     get_session_file_path(session_id, path);
-    // printf("path: %s\n", path);
     FILE *output = fopen(path, "w");
     session_to_str(session_id, str_to_write);
-    // printf("write: %s\n", str_to_write);
 
     fputs(str_to_write, output);
 
-    // printf("test...\n");
     fclose(output);
 }
 
@@ -346,16 +341,6 @@ int register_browser(int browser_socket_fd) {
         pthread_mutex_lock(&session_list_mutex);
         session_map[session_id].in_use = true;
         pthread_mutex_unlock(&session_list_mutex);
-
-        // for (int i = 0; i < NUM_SESSIONS; ++i) {
-        //     if (!session_list[i].in_use) {
-        //         session_id = i;
-        //         pthread_mutex_lock(&session_list_mutex);
-        //         session_list[session_id].in_use = true;
-        //         pthread_mutex_unlock(&session_list_mutex);
-        //         break;
-        //     }
-        // }
     }
     pthread_mutex_lock(&browser_list_mutex);
     browser_list[browser_id].session_id = session_id;

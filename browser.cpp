@@ -178,7 +178,6 @@ void start_browser(const char host_ip[], int port) {
         char message[BUFFER_LEN];
         read_user_input(message);
         send_message(server_socket_fd, message);
-        // server_listener();
     }
 
     // Closes the socket.
